@@ -17,7 +17,7 @@ spec:
         runAsNonRoot: false
         runAsUser: 0
       script: |
-        #!/usr/bin/env sh
+        #!/bin/env sh
         set -eu
         echo "Removing all files from ${WORKSPACE_SOURCE_PATH} ..."
         if [ -d "${WORKSPACE_SOURCE_PATH}" ] ; then
@@ -38,7 +38,8 @@ spec:
     - name: args
       description: Arguments to pass to nose
       type: string
-      default: "-v"
+      # Updated to match your successful GitHub Actions test command
+      default: "-v --with-spec --spec-color --with-coverage --cover-package=service"
   steps:
     - name: nosetests
       image: python:3.9-slim
@@ -47,5 +48,7 @@ spec:
         #!/bin/bash
         set -e
         python -m pip install --upgrade pip wheel
-        pip install -r requirements.txt
+        # Added pinocchio and coverage so the flags in 'args' actually work
+        pip install coverage pinocchio 
+        if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
         nosetests $(params.args)

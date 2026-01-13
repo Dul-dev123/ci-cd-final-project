@@ -1,0 +1,44 @@
+apiVersion: tekton.dev/v1beta1
+kind: Pipeline
+metadata:
+  name: cd-pipeline
+spec:
+  workspaces:
+    - name: pipeline-workspace
+  tasks:
+    - name: clone-repository
+      taskRef:
+        name: git-clone
+      workspaces:
+        - name: output
+          workspace: pipeline-workspace
+      params:
+        - name: url
+          value: "YOUR_GITHUB_REPO_URL" # Put your repo link here
+
+    - name: unit-tests
+      taskRef:
+        name: nose
+      runAfter: [clone-repository]
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+
+    - name: build-image
+      taskRef:
+        name: buildah
+      runAfter: [unit-tests]
+      workspaces:
+        - name: source
+          workspace: pipeline-workspace
+      params:
+        - name: IMAGE
+          value: "image-registry.openshift-image-registry.svc:5000/$(context.pipelineRun.namespace)/counter-service:latest"
+
+    - name: deploy-service
+      taskRef:
+        name: openshift-client
+      runAfter: [build-image]
+      params:
+        - name: SCRIPT
+          value: "oc rollout status deployment/counter-service"
